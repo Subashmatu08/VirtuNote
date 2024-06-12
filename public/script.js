@@ -38,7 +38,10 @@ function loadSVGToFabric(svgData) {
   fabric.loadSVGFromString(svgData, function (objects, options) {
     const obj = fabric.util.groupSVGElements(objects, options);
     obj.scaleToWidth(canvas.width);
-    canvas.add(obj).renderAll();
+    obj.set({ selectable: false, evented: false });
+    canvas.add(obj);
+    canvas.sendToBack(obj);
+    canvas.renderAll();
     enableDrawing(canvas);
   });
 }
@@ -74,9 +77,8 @@ function enableDrawing(canvas) {
       case 'erase':
         canvas.isDrawingMode = true;
         isEraserMode = true;
-        const eraserBrush = new fabric.EraserBrush(canvas);
-        eraserBrush.width = 10;
-        canvas.freeDrawingBrush = eraserBrush;
+        canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
+        canvas.freeDrawingBrush.width = 10;
         break;
       case 'undo':
         undoErasing();
@@ -99,7 +101,7 @@ function enableDrawing(canvas) {
     const lastAction = actionHistory.pop();
     if (lastAction) {
       lastAction.forEach((obj) => {
-        obj.visible = true;
+        obj.set('visible', true);
         canvas.add(obj);
       });
       canvas.renderAll();
@@ -108,7 +110,19 @@ function enableDrawing(canvas) {
 
   canvas.on('erasing:end', ({ targets }) => {
     actionHistory.push(targets);
-    targets.forEach((obj) => canvas.remove(obj));
+    targets.forEach((obj) => {
+      obj.set('visible', false);
+    });
+    canvas.renderAll();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (canvas.getActiveObject()) {
+        canvas.remove(canvas.getActiveObject());
+        canvas.renderAll();
+      }
+    }
   });
 
   document.getElementById('brush').click();
