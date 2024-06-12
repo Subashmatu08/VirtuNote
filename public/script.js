@@ -1,7 +1,9 @@
 const canvas = new fabric.Canvas('c');
-let actionHistory = [];
 let isEraserMode = false;
 let currentTool = 'brush';
+let actionStack = [];
+let redoStack = [];
+let erasingRemovesErasedObjects = false;
 
 document
   .getElementById('imageUpload')
@@ -38,9 +40,8 @@ function loadSVGToFabric(svgData) {
   fabric.loadSVGFromString(svgData, function (objects, options) {
     const obj = fabric.util.groupSVGElements(objects, options);
     obj.scaleToWidth(canvas.width);
-    obj.set({ selectable: false, evented: false });
-    canvas.add(obj);
-    canvas.sendToBack(obj);
+    obj.set({ selectable: false, erasable: true });
+    canvas.setBackgroundImage(obj, canvas.renderAll.bind(canvas));
     canvas.renderAll();
     enableDrawing(canvas);
   });
@@ -81,7 +82,10 @@ function enableDrawing(canvas) {
         canvas.freeDrawingBrush.width = 10;
         break;
       case 'undo':
-        undoErasing();
+        undo();
+        break;
+      case 'redo':
+        redo();
         break;
       case 'select':
         canvas.isDrawingMode = false;
@@ -97,21 +101,31 @@ function enableDrawing(canvas) {
     }
   }
 
-  function undoErasing() {
-    const lastAction = actionHistory.pop();
-    if (lastAction) {
-      lastAction.forEach((obj) => {
-        obj.set('visible', true);
-        canvas.add(obj);
-      });
-      canvas.renderAll();
+  canvas.on('object:added', (e) => {
+    if (!isUndoing && !isRedoing) {
+      actionStack.push({ action: 'added', object: e.target });
+      redoStack = [];
     }
-  }
+  });
+
+  canvas.on('object:removed', (e) => {
+    if (!isUndoing && !isRedoing) {
+      actionStack.push({ action: 'removed', object: e.target });
+      redoStack = [];
+    }
+  });
 
   canvas.on('erasing:end', ({ targets }) => {
-    actionHistory.push(targets);
+    if (!isUndoing && !isRedoing) {
+      actionStack.push({ action: 'erased', targets });
+      redoStack = [];
+    }
     targets.forEach((obj) => {
-      obj.set('visible', false);
+      if (erasingRemovesErasedObjects) {
+        canvas.remove(obj);
+      } else {
+        obj.set('visible', false);
+      }
     });
     canvas.renderAll();
   });
@@ -127,3 +141,121 @@ function enableDrawing(canvas) {
 
   document.getElementById('brush').click();
 }
+
+let isUndoing = false;
+let isRedoing = false;
+
+function undo() {
+  if (actionStack.length > 0) {
+    const lastAction = actionStack.pop();
+    isUndoing = true;
+
+    switch (lastAction.action) {
+      case 'added':
+        canvas.remove(lastAction.object);
+        break;
+      case 'removed':
+        canvas.add(lastAction.object);
+        break;
+      case 'erased':
+        lastAction.targets.forEach((obj) => {
+          obj.set('visible', true);
+          canvas.add(obj);
+        });
+        break;
+    }
+
+    redoStack.push(lastAction);
+    canvas.renderAll();
+    isUndoing = false;
+  }
+}
+
+function redo() {
+  if (redoStack.length > 0) {
+    const lastUndo = redoStack.pop();
+    isRedoing = true;
+
+    switch (lastUndo.action) {
+      case 'added':
+        canvas.add(lastUndo.object);
+        break;
+      case 'removed':
+        canvas.remove(lastUndo.object);
+        break;
+      case 'erased':
+        lastUndo.targets.forEach((obj) => {
+          obj.set('visible', false);
+          if (erasingRemovesErasedObjects) {
+            canvas.remove(obj);
+          }
+        });
+        break;
+    }
+
+    actionStack.push(lastUndo);
+    canvas.renderAll();
+    isRedoing = false;
+  }
+}
+
+function setDrawableErasableProp(drawable, value) {
+  canvas.get(drawable)?.set({ erasable: value });
+  changeAction('erase');
+}
+
+function setBgImageErasableProp(input) {
+  const bgImage = canvas.backgroundImage;
+  if (bgImage) {
+    bgImage.set({ erasable: input.checked });
+    canvas.renderAll();
+  }
+}
+
+function setErasingRemovesErasedObjects(input) {
+  erasingRemovesErasedObjects = input.checked;
+}
+
+function downloadImage() {
+  const ext = 'png';
+  const base64 = canvas.toDataURL({
+    format: ext,
+    enableRetinaScaling: true,
+  });
+  const link = document.createElement('a');
+  link.href = base64;
+  link.download = `eraser_example.${ext}`;
+  link.click();
+}
+
+function downloadSVG() {
+  const svg = canvas.toSVG();
+  const a = document.createElement('a');
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const blobURL = URL.createObjectURL(blob);
+  a.href = blobURL;
+  a.download = 'eraser_example.svg';
+  a.click();
+  URL.revokeObjectURL(blobURL);
+}
+
+async function toJSON() {
+  const json = canvas.toDatalessJSON(['clipPath', 'eraser']);
+  const out = JSON.stringify(json, null, '\t');
+  const blob = new Blob([out], { type: 'text/plain' });
+  const clipboardItemData = { [blob.type]: blob };
+  try {
+    navigator.clipboard &&
+      (await navigator.clipboard.write([new ClipboardItem(clipboardItemData)]));
+  } catch (error) {
+    console.log(error);
+  }
+  const blobURL = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobURL;
+  a.download = 'eraser_example.json';
+  a.click();
+  URL.revokeObjectURL(blobURL);
+}
+
+init();
