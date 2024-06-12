@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notebook Image to SVG Editor</title>
+    <style>
+      #canvas-container {
+        border: 1px solid #ccc;
+      }
+      .tool {
+        margin: 5px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+      }
+      .tool.selected {
+        border: 2px solid #000;
+        transform: scale(1.2);
+      }
+      .controls button.active {
+        background: limegreen;
+        font-weight: bold;
+      }
+      .eraser-options {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 5px;
+      }
+      #eraser:hover .eraser-options {
+        display: block;
+      }
+    </style>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <h1>Upload Your Notebook Image</h1>
+    <input type="file" id="imageUpload" accept="image/*" />
+    <div class="controls">
+      <button id="select" type="button" class="tool">Select</button>
+      <button id="erase" type="button" class="tool">Erase</button>
+      <button id="undo" type="button" class="tool">Undo Erasing</button>
+      <button id="brush" type="button" class="tool">Brush</button>
+      <button id="spray" type="button" class="tool">Spray</button>
+    </div>
+    <div id="canvas-container">
+      <canvas id="c" width="800" height="600"></canvas>
+    </div>
+    <input type="color" id="colorPicker" />
+    <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+    <script src="/script.js"></script>
+  </body>
+</html>

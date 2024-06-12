@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "express": "^4.19.2",
+    "jimp": "^0.22.12",
+    "potrace": "^2.1.8"
+  }
+}
