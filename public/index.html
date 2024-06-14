@@ -18,18 +18,22 @@
       <button id="spray" type="button" class="tool">Spray</button>
     </div>
     <div>
-      <div>
+      <!-- <div>
         <label for="a"> Background Image Erasable </label>
         <input id="a" type="checkbox" onchange="setBgImageErasableProp(this)" />
-      </div>
+      </div> -->
       <div>
+        <label for="a">Image Not Erasable </label>
+        <input id="a" type="checkbox" onchange="toggleErasableImage()" />
+      </div>
+      <!-- <div>
         <label for="b"> Remove Erased Objects on Erasing End </label>
         <input
           id="b"
           type="checkbox"
           onchange="setErasingRemovesErasedObjects(this)"
         />
-      </div>
+      </div> -->
     </div>
     <div>
       <button type="button" onclick="toJSON()">toJSON</button>

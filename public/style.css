@@ -6,9 +6,11 @@
 
 #canvas-container {
   border: 1px solid #ccc;
-  height: 75vh;
-  width: 50vh;
-  aspect-ratio: 1.5/1 !important;
+  /* height: 75vh;
+  width: 50vh; */
+  /* aspect-ratio: 1.5/1 !important; */
+  height: 100vh;
+  width: 100vw;
   overflow: scroll;
 }
 .tool {
