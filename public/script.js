@@ -5,6 +5,18 @@ let actionStack = [];
 let redoStack = [];
 let uploadedImage;
 
+function resizeCanvas() {
+  const container = document.getElementById('canvas-container');
+  const canvasElement = document.getElementById('c');
+  canvasElement.width = container.clientWidth;
+  canvasElement.height = container.clientHeight;
+  canvas.setWidth(container.clientWidth);
+  canvas.setHeight(container.clientHeight);
+  canvas.renderAll();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
 document
   .getElementById('imageUpload')
   .addEventListener('change', function (event) {
@@ -18,7 +30,6 @@ document
           const imgInstance = new fabric.Image(imgElement, {
             left: 0,
             top: 0,
-            // size: canvas.width,
             selectable: false,
             evented: false,
             erasable: true,
@@ -35,14 +46,44 @@ document
 function enableDrawing(canvas) {
   const tools = document.querySelectorAll('.tool');
   const colorPicker = document.getElementById('colorPicker');
+  const toolbar = document.getElementById('toolbar');
+  const allToolsContainer = document.getElementById('all-tools');
 
   tools.forEach((tool) => {
     tool.addEventListener('click', function () {
+      if (this.id === 'undo') {
+        undo();
+        return;
+      }
+      if (this.id === 'redo') {
+        redo();
+        return;
+      }
+
       tools.forEach((t) => t.classList.remove('selected'));
       this.classList.add('selected');
       isEraserMode = false;
       currentTool = this.id;
       applyToolSettings(canvas, currentTool);
+
+      const mainToolButton = toolbar.querySelector('.tool');
+      if (mainToolButton.id !== this.id) {
+        const mainToolId = mainToolButton.id;
+        mainToolButton.id = this.id;
+        mainToolButton.textContent = this.textContent;
+
+        const clickedToolClone = this.cloneNode(true);
+        clickedToolClone.addEventListener('click', tool.click);
+        allToolsContainer.replaceChild(clickedToolClone, this);
+
+        const mainToolClone = document.createElement('button');
+        mainToolClone.id = mainToolId;
+        mainToolClone.textContent =
+          mainToolId.charAt(0).toUpperCase() + mainToolId.slice(1);
+        mainToolClone.classList.add('tool');
+        mainToolClone.addEventListener('click', tool.click);
+        allToolsContainer.replaceChild(mainToolClone, mainToolButton);
+      }
     });
   });
 
@@ -64,14 +105,8 @@ function enableDrawing(canvas) {
         canvas.isDrawingMode = true;
         isEraserMode = true;
         const eraserBrush = new fabric.EraserBrush(canvas);
-        eraserBrush.width = 50;
+        eraserBrush.width = 10;
         canvas.freeDrawingBrush = eraserBrush;
-        break;
-      case 'undo':
-        undo();
-        break;
-      case 'redo':
-        redo();
         break;
       case 'select':
         canvas.isDrawingMode = false;
@@ -234,48 +269,6 @@ function toggleErasableImage() {
     uploadedImage.set({ erasable: !isErasable });
     canvas.renderAll();
   }
-}
-
-function downloadImage() {
-  const ext = 'png';
-  const base64 = canvas.toDataURL({
-    format: ext,
-    enableRetinaScaling: true,
-  });
-  const link = document.createElement('a');
-  link.href = base64;
-  link.download = `eraser_example.${ext}`;
-  link.click();
-}
-
-function downloadSVG() {
-  const svg = canvas.toSVG();
-  const a = document.createElement('a');
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const blobURL = URL.createObjectURL(blob);
-  a.href = blobURL;
-  a.download = 'eraser_example.svg';
-  a.click();
-  URL.revokeObjectURL(blobURL);
-}
-
-async function toJSON() {
-  const json = canvas.toDatalessJSON(['clipPath', 'eraser']);
-  const out = JSON.stringify(json, null, '\t');
-  const blob = new Blob([out], { type: 'text/plain' });
-  const clipboardItemData = { [blob.type]: blob };
-  try {
-    navigator.clipboard &&
-      (await navigator.clipboard.write([new ClipboardItem(clipboardItemData)]));
-  } catch (error) {
-    console.log(error);
-  }
-  const blobURL = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = blobURL;
-  a.download = 'eraser_example.json';
-  a.click();
-  URL.revokeObjectURL(blobURL);
 }
 
 enableDrawing(canvas);

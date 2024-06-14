@@ -2,22 +2,38 @@
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 #canvas-container {
-  border: 1px solid #ccc;
-  /* height: 75vh;
-  width: 50vh; */
-  /* aspect-ratio: 1.5/1 !important; */
-  height: 100vh;
-  width: 100vw;
-  overflow: scroll;
+  position: absolute;
+  top: 10;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
 }
+
+#c {
+  width: 100%;
+  height: 100%;
+}
+
 .tool {
   margin: 5px;
   padding: 10px;
   border: 1px solid #ccc;
   cursor: pointer;
+}
+.tool:hover {
+  transform: scale(1.2);
 }
 .tool.selected {
   border: 2px solid #000;
@@ -36,4 +52,47 @@
 }
 #eraser:hover .eraser-options {
   display: block;
+}
+
+.controls {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  cursor: pointer;
+  background-color: rgb(122, 122, 122);
+  padding: 0.5rem;
+  border-radius: 150px;
+  margin-bottom: 1rem;
+  margin-right: 1rem;
+  width: max-content;
+  z-index: 2;
+}
+.tool {
+  aspect-ratio: 1/1;
+  background: #e8e6e6;
+  border-radius: 50%;
+}
+
+.hidden {
+  display: none;
+}
+
+#toolbar:hover #all-tools {
+  display: block;
+  transition: all 0.5s ease-in-out !important;
+}
+
+#all-tools {
+  transition: all 0.5s ease-in-out;
+}
+
+#toolbar:hover .tool {
+  display: none;
+}
+
+#toolbar:hover #all-tools .tool {
+  display: inline-block;
 }
