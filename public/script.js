@@ -5,6 +5,11 @@ let actionStack = [];
 let redoStack = [];
 let uploadedImage;
 
+const cropContainer = document.getElementById('crop-container');
+const cropImage = document.getElementById('crop-image');
+const cropButton = document.getElementById('crop-button');
+let cropper;
+
 function resizeCanvas() {
   const container = document.getElementById('canvas-container');
   const canvasElement = document.getElementById('c');
@@ -24,24 +29,40 @@ document
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
-        const imgElement = new Image();
-        imgElement.src = e.target.result;
-        imgElement.onload = function () {
-          const imgInstance = new fabric.Image(imgElement, {
-            left: 0,
-            top: 0,
-            selectable: false,
-            evented: false,
-            erasable: true,
-          });
-          canvas.add(imgInstance);
-          canvas.sendToBack(imgInstance);
-          uploadedImage = imgInstance;
-        };
+        cropImage.src = e.target.result;
+        cropContainer.style.display = 'flex';
+        cropper = new Cropper(cropImage, {
+          aspectRatio: 5 / 7,
+        });
       };
       reader.readAsDataURL(file);
     }
   });
+
+cropButton.addEventListener('click', function () {
+  const croppedCanvas = cropper.getCroppedCanvas();
+  croppedCanvas.toBlob(function (blob) {
+    const imgElement = new Image();
+    imgElement.src = URL.createObjectURL(blob);
+    imgElement.onload = function () {
+      const imgInstance = new fabric.Image(imgElement, {
+        left: 0,
+        top: 0,
+        selectable: false,
+        evented: false,
+        erasable: true,
+      });
+      canvas.setWidth(imgElement.width);
+      canvas.setHeight(imgElement.height);
+      canvas.add(imgInstance);
+      canvas.sendToBack(imgInstance);
+      uploadedImage = imgInstance;
+      cropper.destroy();
+      cropContainer.style.display = 'none';
+      URL.revokeObjectURL(imgElement.src);
+    };
+  });
+});
 
 function enableDrawing(canvas) {
   const tools = document.querySelectorAll('.tool');
@@ -271,4 +292,43 @@ function toggleErasableImage() {
   }
 }
 
+document.getElementById('zoomIn').addEventListener('click', function () {
+  const zoom = canvas.getZoom();
+  canvas.setZoom(zoom * 1.1);
+  canvas.setWidth(canvas.getWidth() * 1.1);
+  canvas.setHeight(canvas.getHeight() * 1.1);
+  canvas.renderAll();
+});
+
+document.getElementById('zoomOut').addEventListener('click', function () {
+  const zoom = canvas.getZoom();
+  canvas.setZoom(zoom / 1.1);
+  canvas.setWidth(canvas.getWidth() / 1.1);
+  canvas.setHeight(canvas.getHeight() / 1.1);
+  canvas.renderAll();
+});
+
+function addGrid() {
+  const gridSize = 50;
+  const grid = [];
+
+  for (let i = 0; i < canvas.width / gridSize; i++) {
+    grid.push(
+      new fabric.Line([i * gridSize, 0, i * gridSize, canvas.height], {
+        stroke: '#ccc',
+        selectable: false,
+      })
+    );
+    grid.push(
+      new fabric.Line([0, i * gridSize, canvas.width, i * gridSize], {
+        stroke: '#ccc',
+        selectable: false,
+      })
+    );
+  }
+
+  canvas.add(...grid);
+}
+
+addGrid();
 enableDrawing(canvas);
