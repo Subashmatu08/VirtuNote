@@ -158,7 +158,6 @@ input[type='file'] {
   overflow: hidden;
   width: 100%;
   border-radius: 5px;
-  -webkit-appearance: none;
   -webkit-box-sizing: border-box;
   z-index: 1;
   cursor: pointer !important;
